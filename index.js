@@ -14,7 +14,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-app.use(express.json());
+app.use(express.json()); app.use(express.static('public'));
 
 // Create the table if it doesn't exist yet (runs once on startup)
 async function initDb() {
