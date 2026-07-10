@@ -32,9 +32,7 @@ async function initDb() {
   );
 }
 
-app.get('/', (req, res) => {
-  res.send('QR Code API is running!');
-});
+
 
 app.post('/create-checkout-session', async (req, res) => {
   try {
