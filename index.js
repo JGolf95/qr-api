@@ -4,13 +4,12 @@ const QRCode = require('qrcode');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Health check - just to confirm the server is alive
+// Health check
 app.get('/', (req, res) => {
   res.send('QR Code API is running!');
 });
 
-// The actual QR code endpoint
-// Example usage: /qr?text=hello
+// Returns an actual PNG image you can view directly in the browser
 app.get('/qr', async (req, res) => {
   const text = req.query.text;
 
@@ -19,8 +18,9 @@ app.get('/qr', async (req, res) => {
   }
 
   try {
-    const qrImage = await QRCode.toDataURL(text);
-    res.json({ qrCode: qrImage });
+    const buffer = await QRCode.toBuffer(text);
+    res.set('Content-Type', 'image/png');
+    res.send(buffer);
   } catch (err) {
     res.status(500).json({ error: 'Failed to generate QR code' });
   }
