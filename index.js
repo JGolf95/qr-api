@@ -4,13 +4,27 @@ const QRCode = require('qrcode');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Health check
+// TEMPORARY: a single test key so we can confirm this works.
+// Later, real keys will come from Stripe signups instead of this list.
+const validApiKeys = ['test-key-123'];
+
+// Health check - no key needed
 app.get('/', (req, res) => {
   res.send('QR Code API is running!');
 });
 
-// Returns an actual PNG image you can view directly in the browser
-app.get('/qr', async (req, res) => {
+// Middleware: checks every request to /qr for a valid key
+function checkApiKey(req, res, next) {
+  const key = req.header('x-api-key');
+
+  if (!key || !validApiKeys.includes(key)) {
+    return res.status(401).json({ error: 'Missing or invalid API key. Include it as an "x-api-key" header.' });
+  }
+
+  next(); // key is valid, continue to the actual endpoint
+}
+
+app.get('/qr', checkApiKey, async (req, res) => {
   const text = req.query.text;
 
   if (!text) {
