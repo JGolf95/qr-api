@@ -23,12 +23,15 @@ async function initDb() {
     CREATE TABLE IF NOT EXISTS api_keys (
       id SERIAL PRIMARY KEY,
       key TEXT UNIQUE NOT NULL,
-      email TEXT,
-      tier TEXT NOT NULL DEFAULT 'free',
-      usage_count INTEGER NOT NULL DEFAULT 0,
       created_at TIMESTAMP DEFAULT NOW()
     )
   `);
+
+  // Add any columns that might be missing from an earlier version of this table
+  await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS email TEXT`);
+  await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS tier TEXT NOT NULL DEFAULT 'free'`);
+  await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS usage_count INTEGER NOT NULL DEFAULT 0`);
+
   await pool.query(
     `INSERT INTO api_keys (key, tier) VALUES ($1, 'unlimited') ON CONFLICT (key) DO NOTHING`,
     ['test-key-123']
