@@ -8,31 +8,53 @@ const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const FREE_TIER_LIMIT = 50;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
-app.use(express.json()); app.use(express.static('public'));
+app.use(express.json());
+app.use(express.static('public'));
 
-// Create the table if it doesn't exist yet (runs once on startup)
 async function initDb() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS api_keys (
       id SERIAL PRIMARY KEY,
       key TEXT UNIQUE NOT NULL,
+      email TEXT,
+      tier TEXT NOT NULL DEFAULT 'free',
+      usage_count INTEGER NOT NULL DEFAULT 0,
       created_at TIMESTAMP DEFAULT NOW()
     )
   `);
-  // Keep the test key working too
   await pool.query(
-    `INSERT INTO api_keys (key) VALUES ($1) ON CONFLICT (key) DO NOTHING`,
+    `INSERT INTO api_keys (key, tier) VALUES ($1, 'unlimited') ON CONFLICT (key) DO NOTHING`,
     ['test-key-123']
   );
 }
 
+// Free signup - no payment required
+app.post('/signup-free', async (req, res) => {
+  const { email } = req.body;
 
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ error: 'Please provide a valid email address.' });
+  }
+
+  try {
+    const newKey = crypto.randomBytes(16).toString('hex');
+    await pool.query(
+      'INSERT INTO api_keys (key, email, tier) VALUES ($1, $2, $3)',
+      [newKey, email, 'free']
+    );
+    res.json({ key: newKey, limit: FREE_TIER_LIMIT });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to create free key' });
+  }
+});
 
 app.post('/create-checkout-session', async (req, res) => {
   try {
@@ -58,7 +80,10 @@ app.get('/success', async (req, res) => {
 
     if (session.payment_status === 'paid') {
       const newKey = crypto.randomBytes(16).toString('hex');
-      await pool.query('INSERT INTO api_keys (key) VALUES ($1)', [newKey]);
+      await pool.query(
+        'INSERT INTO api_keys (key, tier) VALUES ($1, $2)',
+        [newKey, 'unlimited']
+      );
 
       res.send(`
         <h1>Thanks for subscribing!</h1>
@@ -91,6 +116,16 @@ async function checkApiKey(req, res, next) {
     if (result.rows.length === 0) {
       return res.status(401).json({ error: 'Invalid API key.' });
     }
+
+    const record = result.rows[0];
+
+    if (record.tier === 'free' && record.usage_count >= FREE_TIER_LIMIT) {
+      return res.status(429).json({
+        error: `Free tier limit of ${FREE_TIER_LIMIT} requests reached. Upgrade at /#pricing for unlimited access.`
+      });
+    }
+
+    req.apiKeyRecord = record;
     next();
   } catch (err) {
     console.error(err);
@@ -107,6 +142,7 @@ app.get('/qr', checkApiKey, async (req, res) => {
 
   try {
     const buffer = await QRCode.toBuffer(text);
+    await pool.query('UPDATE api_keys SET usage_count = usage_count + 1 WHERE id = $1', [req.apiKeyRecord.id]);
     res.set('Content-Type', 'image/png');
     res.send(buffer);
   } catch (err) {
