@@ -454,7 +454,7 @@
       <p class="lede">No QR encoder to write, no library to babysit. Send text, get back a ready-to-use PNG. Built for developers who just want the image.</p>
 
       <div class="cta-row">
-        <button class="cta" onclick="showFreeSignup()">Try free — 50 requests</button>
+        <button class="cta" onclick="showFreeSignup()">Try free — 5 requests</button>
         <button class="cta-outline" onclick="subscribe()">Subscribe — $10/month</button>
       </div>
 
@@ -490,7 +490,7 @@
       <div class="step">
         <div class="num">01</div>
         <h3>Get a key</h3>
-        <p>Sign up free for 50 requests, or subscribe for $10/month unlimited. Your key is shown immediately — no waiting.</p>
+        <p>Sign up free for 5 requests, or subscribe for $10/month unlimited. Your key is shown immediately — no waiting.</p>
       </div>
       <div class="step">
         <div class="num">02</div>
@@ -500,4 +500,103 @@
       <div class="step">
         <div class="num">03</div>
         <h3>Get back a PNG</h3>
-        <p>The response is a real image file — drop it straight
+        <p>The response is a real image file — drop it straight into your app, email, or printed material.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap" id="pricing">
+    <div class="section-head">
+      <h2>Pricing</h2>
+    </div>
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="amount">Free</div>
+        <ul>
+          <li>5 requests, no card required</li>
+          <li>Key issued instantly</li>
+          <li>Upgrade anytime</li>
+        </ul>
+        <button class="cta-dark-outline" onclick="showFreeSignup()">Get free key</button>
+      </div>
+      <div class="price-card dark">
+        <div class="amount">$10<span> / month</span></div>
+        <ul>
+          <li>Unlimited requests</li>
+          <li>No rate limits</li>
+          <li>Cancel anytime, no contract</li>
+        </ul>
+        <button class="cta-light" onclick="subscribe()">Subscribe now</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="wrap">
+    <span>qr-api</span>
+    <span>built with Node.js · Express · Stripe</span>
+  </footer>
+
+  <script>
+    const qr = new QRCode(document.getElementById("qr-preview"), {
+      text: "https://your-product.com",
+      width: 180,
+      height: 180,
+      colorDark: "#14171C",
+      colorLight: "#EEF0F2",
+      correctLevel: QRCode.CorrectLevel.M
+    });
+
+    const input = document.getElementById('qr-text');
+    input.addEventListener('input', () => {
+      const value = input.value.trim() || ' ';
+      qr.clear();
+      qr.makeCode(value);
+    });
+
+    function showFreeSignup() {
+      document.getElementById('free-signup-box').style.display = 'block';
+    }
+
+    async function signupFree() {
+      const email = document.getElementById('free-email').value;
+      const resultBox = document.getElementById('free-key-result');
+
+      if (!email || !email.includes('@')) {
+        resultBox.textContent = 'Please enter a valid email.';
+        return;
+      }
+
+      try {
+        const res = await fetch('/signup-free', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+
+        if (data.key) {
+          resultBox.innerHTML = `Your API key: <strong>${data.key}</strong><br>Save this — you get ${data.limit} free requests.`;
+        } else {
+          resultBox.textContent = data.error || 'Something went wrong.';
+        }
+      } catch (err) {
+        resultBox.textContent = 'Something went wrong. Please try again.';
+      }
+    }
+
+    async function subscribe() {
+      const btns = document.querySelectorAll('button');
+      btns.forEach(b => b.disabled = true);
+      try {
+        const res = await fetch('/create-checkout-session', { method: 'POST' });
+        const data = await res.json();
+        window.location.href = data.url;
+      } catch (err) {
+        btns.forEach(b => b.disabled = false);
+        alert('Something went wrong starting checkout. Please try again.');
+      }
+    }
+  </script>
+
+</body>
+</html>

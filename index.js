@@ -8,7 +8,7 @@ const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
-const FREE_TIER_LIMIT = 50;
+const FREE_TIER_LIMIT = 5;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -27,7 +27,6 @@ async function initDb() {
     )
   `);
 
-  // Add any columns that might be missing from an earlier version of this table
   await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS email TEXT`);
   await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS tier TEXT NOT NULL DEFAULT 'free'`);
   await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS usage_count INTEGER NOT NULL DEFAULT 0`);
@@ -38,7 +37,6 @@ async function initDb() {
   );
 }
 
-// Free signup - no payment required
 app.post('/signup-free', async (req, res) => {
   const { email } = req.body;
 
