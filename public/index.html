@@ -125,8 +125,9 @@
   .cta-row {
     display: flex;
     align-items: center;
-    gap: 18px;
-    margin-bottom: 36px;
+    gap: 14px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
   }
 
   button.cta {
@@ -144,11 +145,54 @@
   button.cta:hover { background: var(--accent); }
   button.cta:active { transform: scale(0.98); }
 
+  button.cta-outline {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    padding: 15px 26px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  button.cta-outline:hover { border-color: var(--ink); }
+
   .price-tag {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 13px;
     color: var(--muted);
   }
+
+  #free-signup-box {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 28px;
+  }
+
+  #free-signup-box input {
+    width: 60%;
+    padding: 12px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    background: var(--paper);
+    color: var(--ink);
+    outline: none;
+  }
+  #free-signup-box input:focus { border-color: var(--accent); }
+
+  #free-key-result {
+    margin-top: 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    word-break: break-all;
+  }
+  #free-key-result strong { color: var(--accent); }
 
   .code-sample {
     background: var(--ink);
@@ -300,41 +344,52 @@
     border-radius: 4px;
   }
 
-  .pricing-card {
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .price-card {
+    border-radius: 14px;
+    padding: 36px;
+    border: 1px solid var(--line);
+    background: var(--card);
+  }
+
+  .price-card.dark {
     background: var(--ink);
     color: var(--paper);
-    border-radius: 14px;
-    padding: 44px;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    gap: 40px;
+    border: none;
   }
 
-  .pricing-card .amount {
+  .price-card .amount {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 42px;
+    font-size: 36px;
     font-weight: 600;
+    margin-bottom: 6px;
   }
-  .pricing-card .amount span {
-    font-size: 15px;
-    color: #8B93A1;
+  .price-card .amount span {
+    font-size: 14px;
     font-weight: 400;
+    color: var(--muted);
   }
+  .price-card.dark .amount span { color: #8B93A1; }
 
-  .pricing-card ul {
+  .price-card ul {
     list-style: none;
     padding: 0;
-    margin: 18px 0 0;
+    margin: 20px 0 24px;
     font-size: 14px;
-    color: #C3C9D2;
+    color: var(--muted);
   }
-  .pricing-card li {
+  .price-card.dark ul { color: #C3C9D2; }
+  .price-card li {
     padding: 5px 0;
     display: flex;
     gap: 10px;
   }
-  .pricing-card li::before {
+  .price-card li::before {
     content: '→';
     color: var(--accent-2);
   }
@@ -346,12 +401,26 @@
     background: var(--paper);
     color: var(--ink);
     border: none;
-    padding: 15px 26px;
+    padding: 14px 24px;
     border-radius: 6px;
     cursor: pointer;
-    white-space: nowrap;
+    width: 100%;
   }
   button.cta-light:hover { background: #fff; }
+
+  button.cta-dark-outline {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    padding: 14px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+  }
+  button.cta-dark-outline:hover { border-color: var(--ink); }
 
   footer.wrap {
     padding: 40px 24px 60px;
@@ -365,8 +434,9 @@
   @media (max-width: 860px) {
     .hero { grid-template-columns: 1fr; }
     .steps { grid-template-columns: 1fr; }
-    .pricing-card { grid-template-columns: 1fr; text-align: left; }
+    .pricing-grid { grid-template-columns: 1fr; }
     h1 { font-size: 34px; }
+    #free-signup-box input { width: 100%; margin-bottom: 10px; }
   }
 </style>
 </head>
@@ -382,10 +452,18 @@
       <div class="eyebrow">Developer API</div>
       <h1>Turn any text into a <em>scannable QR code</em> — with one GET request.</h1>
       <p class="lede">No QR encoder to write, no library to babysit. Send text, get back a ready-to-use PNG. Built for developers who just want the image.</p>
+
       <div class="cta-row">
-        <button class="cta" onclick="subscribe()">Subscribe — $10/month</button>
-        <span class="price-tag">unlimited calls · cancel anytime</span>
+        <button class="cta" onclick="showFreeSignup()">Try free — 50 requests</button>
+        <button class="cta-outline" onclick="subscribe()">Subscribe — $10/month</button>
       </div>
+
+      <div id="free-signup-box" style="display:none;">
+        <input id="free-email" type="email" placeholder="you@email.com">
+        <button class="cta" onclick="signupFree()" style="margin-left: 8px;">Get free key</button>
+        <div id="free-key-result"></div>
+      </div>
+
       <div class="code-sample">curl -H <span class="c2">"x-api-key: YOUR_KEY"</span> \<br>
 &nbsp;&nbsp;<span class="c3">"https://qr-codeapi-production.up.railway.app/qr?text=hello"</span> \<br>
 &nbsp;&nbsp;--output qr.png <span class="c1"># → a real PNG, ready to use</span></div>
@@ -411,8 +489,8 @@
     <div class="steps">
       <div class="step">
         <div class="num">01</div>
-        <h3>Subscribe to get a key</h3>
-        <p>Pay $10/month and your API key is generated and shown to you immediately — no waiting, no email.</p>
+        <h3>Get a key</h3>
+        <p>Sign up free for 50 requests, or subscribe for $10/month unlimited. Your key is shown immediately — no waiting.</p>
       </div>
       <div class="step">
         <div class="num">02</div>
@@ -422,63 +500,4 @@
       <div class="step">
         <div class="num">03</div>
         <h3>Get back a PNG</h3>
-        <p>The response is a real image file — drop it straight into your app, email, or printed material.</p>
-      </div>
-    </div>
-  </section>
-
-  <section class="section wrap" id="pricing">
-    <div class="section-head">
-      <h2>Pricing</h2>
-    </div>
-    <div class="pricing-card">
-      <div>
-        <div class="amount">$10<span> / month</span></div>
-        <ul>
-          <li>Unlimited QR code generations</li>
-          <li>No rate limits</li>
-          <li>Cancel anytime, no contract</li>
-        </ul>
-      </div>
-      <button class="cta-light" onclick="subscribe()">Subscribe now</button>
-    </div>
-  </section>
-
-  <footer class="wrap">
-    <span>qr-api</span>
-    <span>built with Node.js · Express · Stripe</span>
-  </footer>
-
-  <script>
-    const qr = new QRCode(document.getElementById("qr-preview"), {
-      text: "https://your-product.com",
-      width: 180,
-      height: 180,
-      colorDark: "#14171C",
-      colorLight: "#EEF0F2",
-      correctLevel: QRCode.CorrectLevel.M
-    });
-
-    const input = document.getElementById('qr-text');
-    input.addEventListener('input', () => {
-      const value = input.value.trim() || ' ';
-      qr.clear();
-      qr.makeCode(value);
-    });
-
-    async function subscribe() {
-      const btns = document.querySelectorAll('button');
-      btns.forEach(b => b.disabled = true);
-      try {
-        const res = await fetch('/create-checkout-session', { method: 'POST' });
-        const data = await res.json();
-        window.location.href = data.url;
-      } catch (err) {
-        btns.forEach(b => b.disabled = false);
-        alert('Something went wrong starting checkout. Please try again.');
-      }
-    }
-  </script>
-
-</body>
-</html>
+        <p>The response is a real image file — drop it straight
