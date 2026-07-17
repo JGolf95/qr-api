@@ -4,6 +4,7 @@ const QRCode = require('qrcode');
 const Stripe = require('stripe');
 const crypto = require('crypto');
 const { Pool } = require('pg');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,6 +18,15 @@ const pool = new Pool({
 
 app.use(express.json());
 app.use(express.static('public'));
+
+const qrLimiter = rateLimit({
+  windowMs: 1000, // 1 second
+  max: 20, // max 20 requests per second per key
+  keyGenerator: (req) => req.header('x-api-key') || req.ip,
+  message: { error: 'Too many requests. Please slow down and try again in a moment.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 async function initDb() {
   await pool.query(`
@@ -134,7 +144,7 @@ async function checkApiKey(req, res, next) {
   }
 }
 
-app.get('/qr', checkApiKey, async (req, res) => {
+app.get('/qr', qrLimiter, checkApiKey, async (req, res) => {
   const text = req.query.text;
 
   if (!text) {
